@@ -155,7 +155,6 @@ class NavMenu(BoxLayout):
 
     def on_entry(self):
         print('********when does NavMenu on_entry fire?******')
-        # self.csm=self.app.ps2.csm
 
     def nav_change_screen1(self):
         self.app.ps2.csm.current="table_screen"
@@ -188,7 +187,6 @@ class MainApp(MDApp):
         psm.add_widget(self.ps1)
         psm.add_widget(self.ps2)
         self.icon = "icon.png"
-
 
         return psm
 
