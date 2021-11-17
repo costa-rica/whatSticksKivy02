@@ -82,17 +82,11 @@
         size_hint_x: .6
 
 <ActivityScreen>
-  email:email
+  email_label:email_label
   title: title
   note:note
   time_thing:time_thing
   date_thing:date_thing
-  # canvas.before:
-  #   Color:
-  #     rgba: 127/255,160/255,189/255,1 #light blue
-  #   Rectangle:
-  #     pos: self.pos
-  #     size: self.size
   FloatLayout:
     Label:
       text: 'Add Activity Window'
@@ -101,9 +95,9 @@
       font_size: 24
 
     Label:
-      id: email
+      id: email_label
       size_hint: None,None
-      pos_hint:{'x':.00,'y':.64}
+      pos_hint:{'x':.23,'y':.64}
       font_size: 20
 
 
