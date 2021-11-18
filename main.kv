@@ -148,19 +148,26 @@
       pos_hint: {"x": 0.6,'y':.07}
       on_press: root.log_activity()
 
-<NavMenu>
-  orientation:'vertical'
-  size_hint:(0.1,0.9)
-  Button:
-    text:"button1"
-    on_release: root.nav_change_screen1()
-  Label:
-    text:"Just a label"
-  Button:
-    text:"button2"
-    on_release: root.nav_change_screen2()
-  Label:
-    text: "another label"
+# <NavMenu>
+#   orientation:'vertical'
+
+  # size_hint:(0.1,0.9)
+  # spacing: 100
+  # canvas:
+  #   Color:
+  #     rgb:0,0,0,1
+  #   Rectangle:
+  #     size: self.size
+  # Button:
+  #   text:"button1"
+  #   on_release: root.nav_change_screen1()
+    # Label:
+    #   text:"Just a label"
+    # Button:
+    #   text:"button2"
+    #   on_release: root.nav_change_screen2()
+      # Label:
+      #   text: "another label"
 
 
 <ConfirmBox>

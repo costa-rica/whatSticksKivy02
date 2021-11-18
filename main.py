@@ -18,11 +18,12 @@ import datetime;from datetime import timedelta
 from utils import add_activity_util, current_time_util
 import json
 from kivy.uix.widget import Widget
+from kivy.uix.floatlayout import FloatLayout
 # import time
 # import pytz
 
 if platform in ['ios','android']:
-    print('kivy.utils.platform:::', platform,)
+    print('kivy.utils.platform:::', platform)
 else:
     Window.size = (640, 1136)#iphone demensions
 
@@ -42,22 +43,19 @@ class ParentScreen1(Screen):
         print('email/password::', self.email.text, self.password.text)
         print("response:::",response.status_code)
 
-        # if response.status_code ==200:
-        #     self.app.psm.current="ps2"
         if response.status_code ==200:
             # print(json.loads(response.content.decode('utf-8')))
             for i in json.loads(response.content.decode('utf-8')):
                 if i['email']==self.email.text:
 
-                    ActivityScreen.user_name_str=i['username']
+                    # ActivityScreen.user_name_str=i['username']
                     ParentScreen2.user_timezone=i['user_timezone']
                     # print('i[user_timezone;;;;',i['user_timezone'])
-                    ActivityScreen.user_id_str=i['id']
+                    # ActivityScreen.user_id_str=i['id']
                     ParentScreen2.email=self.email.text
                     ActivityScreen.email=self.email.text
                     print('ParentScreen1 login_button email:::',self.email.text)
 
-                    #sm.current = 'main'
                     self.app.psm.current="ps2"
         else:
             invalidLogin()
@@ -75,20 +73,24 @@ class CanvasWidget(Widget):
             self.rect.size = self.size
 
 class ParentScreen2(Screen):
-    user_timezone=''
-    email=''
+    # user_timezone=''
+    # email=''
     def __init__(self,**kwargs):
         super(ParentScreen2, self).__init__(**kwargs)
+    #Add NavigationLayout
         self.super_box=BoxLayout(orientation ='vertical')
     #Add navigation slide out thingy
-        nav_drawer=MDNavigationDrawer()
+        nav_drawer=MDNavigationDrawer(size_hint=(1,.9))
         self.nav_drawer=nav_drawer
+    #Add Menu with buttons to navigation slide out thingy aka nav_drawer
         nav_box=NavMenu()
         nav_drawer.add_widget(nav_box)
+    #Make canvas for screenbackground
+        screenbackground=CanvasWidget()
+    #Make toolbar
         toolbar=Toolbar()
         toolbar.left_action_items=[["menu", lambda x: nav_drawer.set_state("open")]]
-        screenbackground=CanvasWidget()
-    #order of self widgets matters:
+    #order of widgets added to self(ParentScreen2) matters:
         self.add_widget(screenbackground,index=99)
         self.add_widget(self.super_box)
         self.add_widget(nav_drawer)
@@ -143,25 +145,58 @@ class TableScreen(Screen):
 class NavMenu(BoxLayout):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        nav_box=BoxLayout(orientation ='vertical',size_hint=(0.1,0.9))
-        nav_button1 = Button(text="Button(Nav) go to childS2")
-        nav_button1.bind(on_press=self.nav_change_screen1)
-        nav_button2 = Button(text="Button(Nav) go to childS1")
-        nav_button2.bind(on_press=self.nav_change_screen2)
+        with self.canvas:
+            Color(127/255,160/255,189/255,1)
+            self.rect=Rectangle(pos=self.pos,size=self.size)
+            self.bind(pos=self.update_rect,
+                          size=self.update_rect)
+
+        self.orientation="vertical"
+        self.app=MainApp.get_running_app()
+        # nav_box=BoxLayout(orientation ='vertical',size_hint=(0.1,0.9), spacing=20)
+        nav_box=BoxLayout(orientation ='vertical',size_hint=(1,.8))
+        nav_button1 = Button(text="Add Activity")
+        nav_button1.bind(on_press=self.nav_to_activity)
+        nav_button2 = Button(text="View All Entries")
+        nav_button2.bind(on_press=self.nav_to_table)
+
+        # nav_box.add_widget(nav_button2)
+
+        # toolbar_background=CanvasWidget(size=self.size)
+        self.add_widget(nav_box)
+
         nav_box.add_widget(nav_button1)
         nav_box.add_widget(nav_button2)
-        self.app=MainApp.get_running_app()
+        # self.add_widget(toolbar_background,index=0)
 
-
-    def on_entry(self):
-        print('********when does NavMenu on_entry fire?******')
-
-    def nav_change_screen1(self):
-        self.app.ps2.csm.current="table_screen"
-
-    def nav_change_screen2(self):
+    def nav_to_activity(self, *args):
         self.app.ps2.csm.current="activity_screen"
 
+    def nav_to_table(self, *args):
+        self.app.ps2.csm.current="table_screen"
+    def update_rect(self, *args):
+            self.rect.pos = self.pos
+            self.rect.size = self.size
+# class NavMenu(FloatLayout):
+#     def __init__(self,**kwargs):
+#         super().__init__(**kwargs)
+#
+#         toolbar_background=CanvasWidget()
+#         # self.add_widget(nav_box)
+#         # self.add_widget(toolbar_background)
+#         nav_button1 = Button(text="Button(Nav) go to childS2",
+#             size_hint=(.75,1),pos_hint={'x':.86,'y':.91})
+#         nav_button1.bind(on_press=self.nav_change_screen1)
+#         self.add_widget(nav_button1)
+#
+#     def on_enter(self, *args):
+#         self.add_widget(toolbar_background)
+#
+#     def nav_change_screen1(self, *args):
+#         self.app.ps2.csm.current="table_screen"
+#
+#     def nav_change_screen2(self, *args):
+#         self.app.ps2.csm.current="activity_screen"
 
 class Toolbar(MDToolbar):...
 
@@ -190,5 +225,5 @@ class MainApp(MDApp):
 
         return psm
 
-
-MainApp().run()
+if __name__ == "__main__":
+    MainApp().run()
