@@ -3,6 +3,7 @@ from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivymd.uix.label import MDLabel
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
 from kivymd.uix.navigationdrawer import MDNavigationDrawer, MDNavigationLayout
 from kivymd.uix.toolbar import MDToolbar
@@ -10,7 +11,7 @@ from kivy.graphics import Rectangle, Color
 from kivymd.uix.textfield import MDTextField
 from kivy.core.window import Window
 import requests
-from kivy.properties import ObjectProperty, ColorProperty
+from kivy.properties import ObjectProperty, ColorProperty, StringProperty
 from kivymd.uix.toolbar import MDToolbar
 from kivy.core.window import Window
 from kivy.utils import platform
@@ -19,6 +20,14 @@ from utils import add_activity_util, current_time_util
 import json
 from kivy.uix.widget import Widget
 from kivy.uix.floatlayout import FloatLayout
+from kivymd.uix.list import OneLineIconListItem
+from kivy.uix.gridlayout import GridLayout
+
+from table import TableView, TableColumn
+from kivy.uix.scrollview import ScrollView
+import os
+import csv
+from kivy.metrics import dp
 # import time
 # import pytz
 
@@ -44,6 +53,7 @@ class ParentScreen1(Screen):
         print("response:::",response.status_code)
 
         if response.status_code ==200:
+            # TableScreen.stuff=json.loads(response.content.decode('utf-8'))
             # print(json.loads(response.content.decode('utf-8')))
             for i in json.loads(response.content.decode('utf-8')):
                 if i['email']==self.email.text:
@@ -54,23 +64,16 @@ class ParentScreen1(Screen):
                     # ActivityScreen.user_id_str=i['id']
                     ParentScreen2.email=self.email.text
                     ActivityScreen.email=self.email.text
+                    ActivityScreen.password=self.password.text
+                    ActivityScreen.user_id_str=i['id']
+                    TableScreen.email=self.email.text
+                    TableScreen.password=self.password.text
+                    TableScreen.user_id_str=i['id']
                     print('ParentScreen1 login_button email:::',self.email.text)
 
                     self.app.psm.current="ps2"
         else:
             invalidLogin()
-
-class CanvasWidget(Widget):
-    def __init__(self,**kwargs):
-        super().__init__(**kwargs)
-        with self.canvas:
-            Color(127/255,160/255,189/255,1)
-            self.rect=Rectangle(pos=self.pos,size=self.size)
-            self.bind(pos=self.update_rect,
-                          size=self.update_rect)
-    def update_rect(self, *args):
-            self.rect.pos = self.pos
-            self.rect.size = self.size
 
 class ParentScreen2(Screen):
     # user_timezone=''
@@ -89,7 +92,9 @@ class ParentScreen2(Screen):
         screenbackground=CanvasWidget()
     #Make toolbar
         toolbar=Toolbar()
-        toolbar.left_action_items=[["menu", lambda x: nav_drawer.set_state("open")]]
+        # toolbar.left_action_items=[["menu", lambda x: nav_drawer.set_state("open")]]
+        # print('dir(toolbar):::',dir(toolbar))
+        toolbar.left_action_items=[["menu", lambda x: self.toggle_nave_bar()]]
     #order of widgets added to self(ParentScreen2) matters:
         self.add_widget(screenbackground,index=99)
         self.add_widget(self.super_box)
@@ -97,10 +102,21 @@ class ParentScreen2(Screen):
         self.add_widget(toolbar)
 
     def on_enter(self):
-        ActivityScreen.user_timezone=self.user_timezone
-        ActivityScreen.email=self.email
-        self.csm=ChildScreenManger()
-        self.super_box.add_widget(self.csm)
+        # print('parentScreen2 contents before:::', dir(ParentScreen2))
+        try:
+            self.remove_widget(self.csm)
+        except:
+            ActivityScreen.user_timezone=self.user_timezone
+            ActivityScreen.email=self.email
+            self.csm=ChildScreenManger()
+            self.super_box.add_widget(self.csm)
+        # print('parentScreen2 contents after:::', dir(ParentScreen2))
+    def toggle_nave_bar(self):
+        print('self.nav_drawer.set_state:::',self.nav_drawer.state)
+        if self.nav_drawer.state=='close':
+            self.nav_drawer.set_state("open")
+        else:
+            self.nav_drawer.set_state("close")
 
 class ActivityScreen(Screen):
     email=''
@@ -108,6 +124,8 @@ class ActivityScreen(Screen):
     time_thing=ObjectProperty()
     date_thing=ObjectProperty()
     user_timezone=''
+    user_id_str=''
+    password=''
     # user_timezone='Europe/Paris'#'US/Eastern'
     def __init__(self,**kwargs):
         super(ActivityScreen,self).__init__(**kwargs)
@@ -127,7 +145,7 @@ class ActivityScreen(Screen):
         #combine date_thing adn time_thing into datetime object
         try:
             datetime_thing=datetime.datetime.strptime(self.ids.date_thing.text +" "+ self.ids.time_thing.text,'%m/%d/%Y %I:%M %p')
-            add_activity_util(title, note,self.user_id_str,self.user_timezone,datetime_thing, self.user_email,self.user_password)
+            add_activity_util(title, note,self.user_id_str,self.user_timezone,datetime_thing, self.email,self.password)
             self.add_widget(ConfirmBox())
 
         except ValueError:
@@ -135,39 +153,117 @@ class ActivityScreen(Screen):
 
 
 class TableScreen(Screen):
+    stuff=''
+    email=''
+    password=''
+    user_id_str=''
+    table_grid=ObjectProperty()
+    delete_button=ObjectProperty()
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        box = BoxLayout(orientation ='vertical')
-        box.add_widget(MDLabel(text="Label in BoxLayout in Table Screen",
-            pos_hint={'center_x':.95}))
-        self.add_widget(box)
+
+
+class TableData(GridLayout):
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        user_id_str='1'
+        email='nickapeed@yahoo.com'
+        password='test'
+        url='https://api.what-sticks-health.com/get_user_health_descriptions/'
+        #
+        response = requests.request('GET',
+            url+user_id_str, auth=(email,password))
+        response_decoded=response.content.decode('utf-8')
+        response_data=json.loads(response.content.decode('utf-8'))
+        print('response_data::',type(response_data),response_data)
+        print('response_data::',type(response_data[0]),response_data[0].keys())
+        self.row_data_list=[[i['id'],self.convert_datetime(
+            i['datetime_of_activity']),i['var_activity']] for i in response_data]
+        self.cols=3
+        print('self.width:::',self.width)
+
+
+        self.date_dict={}
+        self.act_dict={}
+        # self.del_dict={}
+        self.del_box_dict={}
+        for i in self.row_data_list:
+            date_time_obj=MDLabel(text=str(i[1]), size_hint=(None,None),
+                size=(self.width*(1/3),dp(50)),
+                font_size=10)
+            activity_obj=MDLabel(text=str(i[2]), size_hint=(None,None), size=(self.width*(1/3),dp(50)))
+            del_box=RelativeLayout(size_hint=(None,None),size=(self.width*(1/3),dp(50)))
+            delete_btn=Button(text=str(i[0]),font_size=2,color=(.5,.5,.5,0),
+                size_hint=(.5,.5),
+                pos_hint={'center_x':.5,'center_y':.5}
+                )
+
+            delete_btn.bind(on_press=self.delete_button_pressed)
+            delete_label=MDLabel(text='delete',pos_hint={'x':.35})
+
+            del_box.add_widget(delete_btn)
+            del_box.add_widget(delete_label)
+            self.date_dict[i[0]]=date_time_obj
+            self.act_dict[i[0]]=activity_obj
+            # self.del_dict[i[0]]=delete_btn
+            self.del_box_dict[i[0]]=del_box
+            self.add_widget(date_time_obj)
+            self.add_widget(activity_obj)
+            self.add_widget(del_box)
+
+    def delete_button_pressed(self,widget):
+        print('button preseed')
+        print('widget.text:',str(widget.text))
+
+        activity_id_str=str(widget.text)
+        email='nickapeed@yahoo.com'
+        password='test'
+        url='https://api.what-sticks-health.com/get_health_descriptions/'
+        #
+        response = requests.request('DELETE',url+activity_id_str, auth=(email,password))
+        print('response:::',response.status_code)
+
+    def on_size(self, *args):
+        #This probably SLOWS the app down a lot
+        # first_item=self.del_dict[list(self.del_dict.keys())[0]]
+        # print('first_item width:::',first_item.width)
+
+        width_size=self.width
+        for i,j in self.date_dict.items():
+            j.width=width_size*(1/3)
+            # if len(j.text)>15:
+            j.font_size=12
+        for i,j in self.act_dict.items():
+            j.width=width_size*(1/3)
+            if len(j.text)>15:
+                j.font_size=12
+        for i,j in self.del_box_dict.items():
+            j.width=width_size*(1/3)
+
+
+    def convert_datetime(self,date_time_str):
+        try:
+            date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S.%f')
+        except ValueError:
+            date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S')
+        return date_time_obj.strftime("%m/%d/%Y, %H:%M:%S")
+
+
+
+# class BoxSmall(BoxLayout): ...
 
 class NavMenu(BoxLayout):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        with self.canvas:
-            Color(127/255,160/255,189/255,1)
+        with self.canvas.before:
+            # Color(127/255,160/255,189/255,1)
+            Color(100/255,160/255,189/255,1)
             self.rect=Rectangle(pos=self.pos,size=self.size)
             self.bind(pos=self.update_rect,
                           size=self.update_rect)
 
         self.orientation="vertical"
         self.app=MainApp.get_running_app()
-        # nav_box=BoxLayout(orientation ='vertical',size_hint=(0.1,0.9), spacing=20)
-        nav_box=BoxLayout(orientation ='vertical',size_hint=(1,.8))
-        nav_button1 = Button(text="Add Activity")
-        nav_button1.bind(on_press=self.nav_to_activity)
-        nav_button2 = Button(text="View All Entries")
-        nav_button2.bind(on_press=self.nav_to_table)
-
-        # nav_box.add_widget(nav_button2)
-
-        # toolbar_background=CanvasWidget(size=self.size)
-        self.add_widget(nav_box)
-
-        nav_box.add_widget(nav_button1)
-        nav_box.add_widget(nav_button2)
-        # self.add_widget(toolbar_background,index=0)
 
     def nav_to_activity(self, *args):
         self.app.ps2.csm.current="activity_screen"
@@ -177,26 +273,6 @@ class NavMenu(BoxLayout):
     def update_rect(self, *args):
             self.rect.pos = self.pos
             self.rect.size = self.size
-# class NavMenu(FloatLayout):
-#     def __init__(self,**kwargs):
-#         super().__init__(**kwargs)
-#
-#         toolbar_background=CanvasWidget()
-#         # self.add_widget(nav_box)
-#         # self.add_widget(toolbar_background)
-#         nav_button1 = Button(text="Button(Nav) go to childS2",
-#             size_hint=(.75,1),pos_hint={'x':.86,'y':.91})
-#         nav_button1.bind(on_press=self.nav_change_screen1)
-#         self.add_widget(nav_button1)
-#
-#     def on_enter(self, *args):
-#         self.add_widget(toolbar_background)
-#
-#     def nav_change_screen1(self, *args):
-#         self.app.ps2.csm.current="table_screen"
-#
-#     def nav_change_screen2(self, *args):
-#         self.app.ps2.csm.current="activity_screen"
 
 class Toolbar(MDToolbar):...
 
@@ -212,6 +288,18 @@ class ChildScreenManger(ScreenManager):
         self.add_widget(activity_screen)
         self.add_widget(table_screen)
         self.current="activity_screen"
+
+class CanvasWidget(Widget):
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        with self.canvas:
+            Color(127/255,160/255,189/255,1)
+            self.rect=Rectangle(pos=self.pos,size=self.size)
+            self.bind(pos=self.update_rect,
+                          size=self.update_rect)
+    def update_rect(self, *args):
+            self.rect.pos = self.pos
+            self.rect.size = self.size
 
 class MainApp(MDApp):
     def build(self):
