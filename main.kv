@@ -204,9 +204,18 @@
   # height:5000
 # <HeadingBox@BoxLayout>
 <HeadingBox>
-  Label:
-    text:'Date and Time'
-    color: 0,0,0,1#black
+  date_btn_sort:date_btn_sort
+  BoxLayout:
+    orientation:'vertical'
+    Label:
+      text:'Date and Time'
+      color: 0,0,0,1#black
+    Button:
+      id:date_btn_sort
+      text:'sort'
+      size_hint:(.9,.9)
+      pos_hint:{'x':.1}
+      on_press:root.date_sort_btn()
   Label:
     text:'Activity Logged'
     color: 0,0,0,1#black
@@ -237,6 +246,41 @@
       root.app.psm.current="ps1"
 
 
+<AreYouSureBox>
+  size:(400,300)
+  size_hint:(None, None)
+  pos_hint:{'x':.2,'y':.29}
+  canvas.before:
+    Color:
+      rgba: .7,.7,.7,1
+    RoundedRectangle:
+      size: self.size
+      pos: self.pos
+  orientation: 'vertical'
+  MDLabel:
+    text:'Are you sure you want to delete activity?'
+    pos_hint: {"x":0.2}
+    font_size:30
+  BoxLayout:
+    Button:
+      background_color: .22,1,.078,1
+
+      size_hint_x:.8
+      pos_hint:{'center_x':.5}
+      text: 'Yes, Delete'
+      # on_release: root.parent.remove_widget(root)
+      on_press: root.yes_button()
+    Button:
+      background_color: .22,1,.078,1
+
+      size_hint_x:.8
+      pos_hint:{'center_x':.5}
+      text: 'No'
+      # on_release: root.parent.remove_widget(root)
+      on_press: root.no_button()
+  MDLabel:
+    size_hint_x:.01
+
 <ConfirmBox>
   size:(400,300)
   size_hint:(None, None)
@@ -258,7 +302,8 @@
     size_hint_x:.8
     pos_hint:{'center_x':.5}
     text: 'Close'
-    on_release: root.parent.remove_widget(root)
+    # on_release: root.parent.remove_widget(root)
+    on_press: root.ok_button()
   MDLabel:
     size_hint_x:.01
 

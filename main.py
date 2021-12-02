@@ -147,6 +147,8 @@ class ActivityScreen(Screen):
             datetime_thing=datetime.datetime.strptime(self.ids.date_thing.text +" "+ self.ids.time_thing.text,'%m/%d/%Y %I:%M %p')
             add_activity_util(title, note,self.user_id_str,self.user_timezone,datetime_thing, self.email,self.password)
             self.add_widget(ConfirmBox())
+            # self.title.text=''
+            # self.note.text=''
 
         except ValueError:
             self.add_widget(FailBox())
@@ -164,7 +166,7 @@ class TableScreen(Screen):
         self.big_box=BigBox()
         self.rel_layout02=RelativeLayout02()
         self.heading_box=HeadingBox()
-        self.rel_layout03=RelativeLayout()
+        self.rel_layout03=RelativeLayout03()
         self.scroll_for_table=ScrollViewForTable()
 
         self.rel_layout02.add_widget(self.heading_box)
@@ -192,7 +194,34 @@ class BiggerBox(BoxLayout):...
 class RelativeLayout01(RelativeLayout):...
 class BigBox(BoxLayout):...
 class RelativeLayout02(RelativeLayout):...
-class HeadingBox(BoxLayout):...
+
+class HeadingBox(BoxLayout):
+    date_btn_sort=ObjectProperty(None)
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+    def date_sort_btn(self):
+        print('sort date')
+        self.date_btn_sort.text='sorted'
+
+        # print('self.parent.parent.parent.children[0].walk(loopback=True)::',self.parent.parent.parent.children[0].walk(loopback=True))
+        # for i in self.parent.parent.parent.children[0].walk(restrict=True):
+        #     print(i)
+        # print('self.parent.parent.children[0].children::',type(self.parent.parent.children[0].children[0].children[0]),
+        #     self.parent.parent.children[0].children[0].children[0])#TableData widget
+        scrollview_for_table=self.parent.parent.children[0].children[0]
+        table_data=self.parent.parent.children[0].children[0].children[0]
+        scrollview_for_table.remove_widget(table_data)
+        #call table_data sort function
+        TableData.sort_direction='ascending'
+        table_data_new=TableData()
+
+        scrollview_for_table.add_widget(table_data_new)
+        #call table_data create table function
+
+
+        # self.parent.parent.children[0].children[0].children
+        # self.parent.parent.children[0].children
+class RelativeLayout03(RelativeLayout):...
 class ScrollViewForTable(ScrollView):...
 
 class TableData(GridLayout):
@@ -200,20 +229,18 @@ class TableData(GridLayout):
     email=''
     password=''
     url_get_activities='https://api.what-sticks-health.com/get_user_health_descriptions/'
-    # def __init__(self,**kwargs):
-    #     super(ActivityScreen,self).__init__(**kwargs)
     date_dict={}
     act_dict={}
     del_box_dict={}
+    sort_direction=''
     def __init__(self,**kwargs):
         super(TableData,self).__init__(**kwargs)
+        self.get_table_data()
+        self.add_data_to_table()
+        # self.sort_direction=''
+        # self.cols=3
 
-        print('user_id_str (__init__TableData)::', self.user_id_str)
-        print('email::', self.email)
-        print('password::', self.password)
-
-        print('build_table????')
-        # self.height=self.minimum_height+dp(20)
+    def get_table_data(self):
         response = requests.request('GET',
             self.url_get_activities+str(self.user_id_str),
             auth=(self.email,self.password))
@@ -221,16 +248,25 @@ class TableData(GridLayout):
 
         response_decoded=response.content.decode('utf-8')
         response_data=json.loads(response.content.decode('utf-8'))
-        # print('response_data::',type(response_data),response_data)
-        # print('response_data::',type(response_data[0]),response_data[0].keys())
-        self.row_data_list=[[i['id'],self.convert_datetime(
-            i['datetime_of_activity']),i['var_activity']] for i in response_data]
-        self.cols=3
 
-        for i in self.row_data_list:
+        self.row_data_list=[(i['id'],self.convert_datetime(
+            i['datetime_of_activity']),i['var_activity']) for i in response_data]
+        print('sort_direction::', self.sort_direction)
+        if self.sort_direction=='ascending':
+            print('self.row_data_list:::',type(self.row_data_list))
+            # print('self.row_dataPlist.sorted():::',self.row_data_list.sort())
+            self.row_data_list.sort(key=lambda k: (k[1]))
+            # print('triggerd if sort_direction::', self.row_data_list)
+        if self.sort_direction=='descending':
+            self.row_data_list.sort(reverse=True)
+
+    def add_data_to_table(self):
+        # self.row_data_list=self.get_table_data()
+
+        for i in self.row_data_list[-20:]:
             date_time_obj=MDLabel(text=str(i[1]), size_hint=(None,None),
                 size=(self.width*(1/3),dp(50)),
-                font_size=10)
+                font_size=10, padding=(dp(15),0))
             activity_obj=MDLabel(text=str(i[2]), size_hint=(None,None), size=(self.width*(1/3),dp(50)))
             del_box=RelativeLayout(size_hint=(None,None),size=(self.width*(1/3),dp(50)))
             delete_btn=Button(text=str(i[0]),font_size=2,color=(.5,.5,.5,0),
@@ -254,20 +290,16 @@ class TableData(GridLayout):
     def delete_button_pressed(self,widget):
         print('button preseed')
         print('widget.text:',str(widget.text))
-
-        activity_id_str=str(widget.text)
-        email='nickapeed@yahoo.com'
-        password='test'
-        url='https://api.what-sticks-health.com/get_health_descriptions/'
-        #
-        response = requests.request('DELETE',url+activity_id_str, auth=(email,password))
-        print('response:::',response.status_code)
+        AreYouSureBox.activity_id_str=str(widget.text)
+        AreYouSureBox.email=self.email
+        AreYouSureBox.password=self.password
+        self.parent.parent.parent.parent.parent.parent.add_widget(AreYouSureBox())
+        print('self.parent:::',self.parent)
+        print('self.parent.parent:::',self.parent.parent)
+        print('self.parent.parent.parent.parent.parent.parent.:::',
+        self.parent.parent.parent.parent.parent.parent)
 
     def on_size(self, *args):
-        #This probably SLOWS the app down a lot
-        # first_item=self.del_dict[list(self.del_dict.keys())[0]]
-        # print('first_item width:::',first_item.width)
-
         width_size=self.width
         for i,j in self.date_dict.items():
             j.width=width_size*(1/3)
@@ -280,14 +312,35 @@ class TableData(GridLayout):
         for i,j in self.del_box_dict.items():
             j.width=width_size*(1/3)
 
-
     def convert_datetime(self,date_time_str):
         try:
             date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S.%f')
         except ValueError:
             date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S')
-        return date_time_obj.strftime("%m/%d/%Y, %H:%M:%S")
+        # return date_time_obj.strftime("%m/%d/%Y, %H:%M:%S")
+        return date_time_obj.strftime("%b%-d '%-y %-I:%M%p")#<------Potential hangup!***************!
 
+class AreYouSureBox(BoxLayout):
+    activity_id_str=''
+    email=''
+    password=''
+    url='https://api.what-sticks-health.com/get_health_descriptions/'
+
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+        self.app=MainApp.get_running_app()
+    def yes_button(self):
+
+        response = requests.request('DELETE',self.url+self.activity_id_str, auth=(self.email,self.password))
+        print('response:::',response.status_code)
+        self.parent.remove_widget(self)
+        self.app.ps2.csm.current="activity_screen"
+        self.app.ps2.csm.current="table_screen"
+
+        # self.parent.remove_widget(self)
+        # self.parent.remove_widget(parent)
+    def no_button(self):
+        self.parent.remove_widget(self)
 
 class NavMenu(BoxLayout):
     def __init__(self,**kwargs):
@@ -313,7 +366,16 @@ class NavMenu(BoxLayout):
 
 class Toolbar(MDToolbar):...
 
-class ConfirmBox(BoxLayout):...
+
+
+class ConfirmBox(BoxLayout):
+    def __init__(self,**kwargs):
+        super().__init__(**kwargs)
+
+    def ok_button(self):
+        self.parent.title.text=''
+        self.parent.note.text=''
+        self.parent.remove_widget(self)
 
 class FailBox(BoxLayout):...
 
