@@ -23,13 +23,10 @@ from kivy.uix.floatlayout import FloatLayout
 from kivymd.uix.list import OneLineIconListItem
 from kivy.uix.gridlayout import GridLayout
 
-from table import TableView, TableColumn
 from kivy.uix.scrollview import ScrollView
 import os
 import csv
 from kivy.metrics import dp
-# import time
-# import pytz
 
 if platform in ['ios','android']:
     print('kivy.utils.platform:::', platform)
@@ -69,6 +66,9 @@ class ParentScreen1(Screen):
                     TableScreen.email=self.email.text
                     TableScreen.password=self.password.text
                     TableScreen.user_id_str=i['id']
+                    TableData.email=self.email.text
+                    TableData.password=self.password.text
+                    TableData.user_id_str=i['id']
                     print('ParentScreen1 login_button email:::',self.email.text)
 
                     self.app.psm.current="ps2"
@@ -153,40 +153,80 @@ class ActivityScreen(Screen):
 
 
 class TableScreen(Screen):
-    stuff=''
+    user_id_str=''
     email=''
     password=''
-    user_id_str=''
-    table_grid=ObjectProperty()
-    delete_button=ObjectProperty()
+    url_get_activities='https://api.what-sticks-health.com/get_user_health_descriptions/'
     def __init__(self,**kwargs):
-        super().__init__(**kwargs)
+        super(TableScreen,self).__init__(**kwargs)
+        self.bigger_box=BiggerBox()
+        self.rel_layout01=RelativeLayout01()
+        self.big_box=BigBox()
+        self.rel_layout02=RelativeLayout02()
+        self.heading_box=HeadingBox()
+        self.rel_layout03=RelativeLayout()
+        self.scroll_for_table=ScrollViewForTable()
 
+        self.rel_layout02.add_widget(self.heading_box)
+
+        self.rel_layout03.add_widget(self.scroll_for_table)
+        self.big_box.add_widget(self.rel_layout02)
+        self.big_box.add_widget(self.rel_layout03)
+
+        self.rel_layout01.add_widget(self.big_box)
+
+        self.bigger_box.add_widget(self.rel_layout01)
+        self.add_widget(self.bigger_box)
+
+    def on_enter(self,*args):
+        try:
+            print('TableScreen on_enter try---this should fire?')
+            self.scroll_for_table.remove_widget(self.table_data)
+            self.table_data=TableData()
+            self.scroll_for_table.add_widget(self.table_data)
+        except:
+            self.table_data=TableData()
+            self.scroll_for_table.add_widget(self.table_data)
+
+class BiggerBox(BoxLayout):...
+class RelativeLayout01(RelativeLayout):...
+class BigBox(BoxLayout):...
+class RelativeLayout02(RelativeLayout):...
+class HeadingBox(BoxLayout):...
+class ScrollViewForTable(ScrollView):...
 
 class TableData(GridLayout):
+    user_id_str=''
+    email=''
+    password=''
+    url_get_activities='https://api.what-sticks-health.com/get_user_health_descriptions/'
+    # def __init__(self,**kwargs):
+    #     super(ActivityScreen,self).__init__(**kwargs)
+    date_dict={}
+    act_dict={}
+    del_box_dict={}
     def __init__(self,**kwargs):
-        super().__init__(**kwargs)
-        user_id_str='1'
-        email='nickapeed@yahoo.com'
-        password='test'
-        url='https://api.what-sticks-health.com/get_user_health_descriptions/'
-        #
+        super(TableData,self).__init__(**kwargs)
+
+        print('user_id_str (__init__TableData)::', self.user_id_str)
+        print('email::', self.email)
+        print('password::', self.password)
+
+        print('build_table????')
+        # self.height=self.minimum_height+dp(20)
         response = requests.request('GET',
-            url+user_id_str, auth=(email,password))
+            self.url_get_activities+str(self.user_id_str),
+            auth=(self.email,self.password))
+        print('response in TableDAta:::',response.status_code)
+
         response_decoded=response.content.decode('utf-8')
         response_data=json.loads(response.content.decode('utf-8'))
-        print('response_data::',type(response_data),response_data)
-        print('response_data::',type(response_data[0]),response_data[0].keys())
+        # print('response_data::',type(response_data),response_data)
+        # print('response_data::',type(response_data[0]),response_data[0].keys())
         self.row_data_list=[[i['id'],self.convert_datetime(
             i['datetime_of_activity']),i['var_activity']] for i in response_data]
         self.cols=3
-        print('self.width:::',self.width)
 
-
-        self.date_dict={}
-        self.act_dict={}
-        # self.del_dict={}
-        self.del_box_dict={}
         for i in self.row_data_list:
             date_time_obj=MDLabel(text=str(i[1]), size_hint=(None,None),
                 size=(self.width*(1/3),dp(50)),
@@ -248,9 +288,6 @@ class TableData(GridLayout):
             date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S')
         return date_time_obj.strftime("%m/%d/%Y, %H:%M:%S")
 
-
-
-# class BoxSmall(BoxLayout): ...
 
 class NavMenu(BoxLayout):
     def __init__(self,**kwargs):

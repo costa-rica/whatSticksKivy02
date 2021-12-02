@@ -1,4 +1,5 @@
 #:set nr_buffer dp(1)
+#:set table_bottom_buffer dp(20)
 <Toolbar>
   title: "What Sticks"
   size_hint: (1, 0.1)
@@ -151,45 +152,58 @@
 
 
 <TableScreen>
-  BiggerBox
+  # BiggerBox(added in python)
 
-<BiggerBox@BoxLayout>
+# <BiggerBox@BoxLayout>
+<BiggerBox>
   padding:'100dp'
   pos_hint:{'top':.95}
-  RelativeLayout:
-    BigBox:
+  # RelativeLayout:(RelativeLayout01:)
+  #   BigBox:
 
-<BigBox@BoxLayout>
+# <BigBox@BoxLayout>
+<BigBox>
   orientation:'vertical'
   spacing:3
-  RelativeLayout:
-    size_hint:(1,.1)
-    canvas.before:
-      Color:
-        rgba: 150/255, 150/255, 150/255, 1
-      Rectangle:
-        size:self.size
-      Color:
-        rgb: 0,0,0
-      Line:
-        points:(0+nr_buffer,0+nr_buffer,0+nr_buffer,self.height-nr_buffer,self.width-nr_buffer,self.height-nr_buffer,self.width-nr_buffer,0+nr_buffer,0+nr_buffer,0+nr_buffer)
-        width:3
-    HeadingBox:
+  # RelativeLayout:(RelativeLayout02)(Add this in TableScreen py)
+<RelativeLayout02>
+  size_hint:(1,.1)
+  canvas.before:
+    Color:
+      rgba: 150/255, 150/255, 150/255, 1
+    Rectangle:
+      size:self.size
+    Color:
+      rgb: 0,0,0
+    Line:
+      points:(0+nr_buffer,0+nr_buffer,0+nr_buffer,self.height-nr_buffer,self.width-nr_buffer,self.height-nr_buffer,self.width-nr_buffer,0+nr_buffer,0+nr_buffer,0+nr_buffer)
+      width:3
+    # HeadingBox:(add this in TableScreen)
 
-  RelativeLayout:
-    ScrollView:
-      canvas.before:
-        Color:
-          rgba: 100/255, 100/255, 100/255, 1
-        Rectangle:
-          size:self.size
-      TableData:
+  # RelativeLayout:(rel_layout03)
+    # ScrollView:
+    #   canvas.before:
+    #     Color:
+    #       rgba: 100/255, 100/255, 100/255, 1
+    #     Rectangle:
+    #       size:self.size
+    #   TableData:
+
+<ScrollViewForTable>
+  canvas.before:
+    Color:
+      rgba: 100/255, 100/255, 100/255, 1
+    Rectangle:
+      size:self.size
+
 
 <TableData>
   cols:3
   size_hint: 1,None
-  height: self.minimum_height+20
-<HeadingBox@BoxLayout>
+  height: self.minimum_height+table_bottom_buffer
+  # height:5000
+# <HeadingBox@BoxLayout>
+<HeadingBox>
   Label:
     text:'Date and Time'
     color: 0,0,0,1#black
