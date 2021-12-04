@@ -8,7 +8,10 @@ import requests;import json;import datetime;from datetime import timedelta
 from kivymd.uix.label import MDLabel
 from kivy.uix.relativelayout import RelativeLayout
 from kivy.uix.button import Button
+from kivy.uix.label import Label
 from kivy.lang import Builder
+# from main import MainApp
+
 
 Builder.load_file("scroll_table_data.kv")
 class ScrollViewForTable(ScrollView):...
@@ -21,77 +24,82 @@ class TableData(GridLayout):
     date_dict={}
     act_dict={}
     del_box_dict={}
-    sort_direction:str
-    def __init__(self,sort_direction,**kwargs):
-        if 'sort_direction ' in kwargs:
-            self.sort_direction = kwargs.pop('sort_direction')
+    date_sort_direction:str
+    act_sort_direction:str
+    entry_count:str
+    def __init__(self,**kwargs):
+        #when adding to kwargs, while initizlizing, must remove from kwargs
+        #otherwise kv file instructions for this widget won't work
+        if 'date_sort_direction' in kwargs:
+            self.date_sort_direction = kwargs.pop('date_sort_direction')
         else:
-            self.sort_direction = sort_direction
-        super(TableData,self).__init__(**kwargs)
+            self.date_sort_direction = ''
+        if 'act_sort_direction' in kwargs:
+            self.act_sort_direction = kwargs.pop('act_sort_direction')
+        else:
+            self.act_sort_direction = ''
+        if 'entry_count' in kwargs:
+            self.entry_count = kwargs.pop('entry_count')
+        else:
+            self.entry_count = ''
+        super(TableData, self).__init__(**kwargs)
         self.get_table_data()
         self.add_data_to_table()
         print('TableData initialized')
-        print('sort_direction::',self.sort_direction)
 
     def get_table_data(self):
         response = requests.request('GET',
             self.url_get_activities+str(self.user_id_str),
             auth=(self.email,self.password))
-        # print('response in TableDAta:::',response.status_code)
-
         response_decoded=response.content.decode('utf-8')
         response_data=json.loads(response.content.decode('utf-8'))
-
         self.row_data_list=[(i['id'],self.convert_datetime(
             i['datetime_of_activity']),i['var_activity']) for i in response_data]
-        # print('sort_direction::', self.sort_direction)
-        if self.sort_direction=='ascending':
-            # print('self.row_data_list:::',type(self.row_data_list))
-            # print('self.row_dataPlist.sorted():::',self.row_data_list.sort())
+
+        if self.entry_count!='all_entries':
+            self.row_data_list=self.row_data_list[-20:]
+
+        if self.date_sort_direction=='ascending':
+            print('sort ascending triggered')
             self.row_data_list.sort(key=lambda k: (k[1]))
-            # print('triggerd if sort_direction::', self.row_data_list)
-        if self.sort_direction=='descending':
-            self.row_data_list.sort(reverse=True)
+        if self.date_sort_direction=='descending':
+            print('sort descending triggered')
+            self.row_data_list.sort(key=lambda k: (k[1]),reverse=True)
+        if self.act_sort_direction=='ascending':
+            # print('sort ascending triggered')
+            self.row_data_list.sort(key=lambda k: (k[2]))
+        if self.act_sort_direction=='descending':
+            # print('sort descending triggered')
+            self.row_data_list.sort(key=lambda k: (k[2]),reverse=True)
 
     def add_data_to_table(self):
-        # self.row_data_list=self.get_table_data()
-
-        for i in self.row_data_list[-20:]:
-            date_time_obj=MDLabel(text=str(i[1]), size_hint=(None,None),
+        for i in self.row_data_list:
+            date_time_obj=Label(text=str(i[1]), size_hint=(None,None),
                 size=(self.width*(1/3),dp(50)),
                 font_size=10, padding=(dp(15),0))
-            activity_obj=MDLabel(text=str(i[2]), size_hint=(None,None), size=(self.width*(1/3),dp(50)))
+            activity_obj=Label(text=str(i[2]), size_hint=(None,None), size=(self.width*(1/3),dp(50)))
             del_box=RelativeLayout(size_hint=(None,None),size=(self.width*(1/3),dp(50)))
-            delete_btn=Button(text=str(i[0]),font_size=2,color=(.5,.5,.5,0),
+            delete_btn=Button(text=str(i[0]),
+                color=(.5,.5,.5,0),
                 size_hint=(.5,.5),
                 pos_hint={'center_x':.5,'center_y':.5}
                 )
-
             delete_btn.bind(on_press=self.delete_button_pressed)
-            delete_label=MDLabel(text='delete',pos_hint={'x':.35})
-
+            delete_label=Label(text='delete',pos_hint={'x':0}, font_size=15)
             del_box.add_widget(delete_btn)
             del_box.add_widget(delete_label)
             self.date_dict[i[0]]=date_time_obj
             self.act_dict[i[0]]=activity_obj
-            # self.del_dict[i[0]]=delete_btn
             self.del_box_dict[i[0]]=del_box
             self.add_widget(date_time_obj)
             self.add_widget(activity_obj)
             self.add_widget(del_box)
-            # self.cols=3
 
     def delete_button_pressed(self,widget):
-        # print('button preseed')
-        # print('widget.text:',str(widget.text))
         AreYouSureBox.activity_id_str=str(widget.text)
         AreYouSureBox.email=self.email
         AreYouSureBox.password=self.password
         self.parent.parent.parent.parent.parent.parent.add_widget(AreYouSureBox())
-        # print('self.parent:::',self.parent)
-        # print('self.parent.parent:::',self.parent.parent)
-        # print('self.parent.parent.parent.parent.parent.parent.:::',
-        # self.parent.parent.parent.parent.parent.parent)
 
     def on_size(self, *args):
         width_size=self.width
@@ -105,6 +113,7 @@ class TableData(GridLayout):
                 j.font_size=12
         for i,j in self.del_box_dict.items():
             j.width=width_size*(1/3)
+            # j.font_size=12
 
     def convert_datetime(self,date_time_str):
         try:
@@ -124,16 +133,21 @@ class AreYouSureBox(BoxLayout):
 
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
-        self.app=MainApp.get_running_app()
+        # print('find MainApp:::', self.parent)
+
     def yes_button(self):
-
+        # print('find MainApp:::',
+        #     self.parent.children[1].children[0].children[0].children[0].children[0].children[0])
+        # parent>table_screen
+        # child>
         response = requests.request('DELETE',self.url+self.activity_id_str, auth=(self.email,self.password))
-        # print('response:::',response.status_code)
+        self.table_data=self.parent.children[1].children[0].children[0].children[0].children[0].children[0]
+        # print('table_data dir::::', dir(table_data))
+        self.table_data.clear_widgets()
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
         self.parent.remove_widget(self)
-        self.app.ps2.csm.current="activity_screen"
-        self.app.ps2.csm.current="table_screen"
 
-        # self.parent.remove_widget(self)
-        # self.parent.remove_widget(parent)
     def no_button(self):
         self.parent.remove_widget(self)

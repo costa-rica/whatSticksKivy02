@@ -29,6 +29,9 @@ import csv
 from kivy.metrics import dp
 from scroll_table_data import ScrollViewForTable, TableData
 
+import webbrowser
+from kivy.uix.dropdown import DropDown
+
 if platform in ['ios','android']:
     print('kivy.utils.platform:::', platform)
 else:
@@ -108,17 +111,22 @@ class ParentScreen2(Screen):
         print('ParentScreen2 initialized')
 
     def on_enter(self):
-        # print('parentScreen2 contents before:::', dir(ParentScreen2))
-        # print('in ParentScreen2, time::', self.count+1)
-        # print('self.children',self.children)
-        # print('self.parent.children',self.parent.children)
-        try:
-            self.remove_widget(self.csm)
-        except:
+        self.get_screens()
+    def get_screens(self):
+        if hasattr(self,'csm'):
+            pass;
+        else:
             ActivityScreen.user_timezone=self.user_timezone
             ActivityScreen.email=self.email
             self.csm=ChildScreenManger()
             self.super_box.add_widget(self.csm)
+        # try:
+        #     self.remove_widget(self.csm)
+        # except:
+        #     ActivityScreen.user_timezone=self.user_timezone
+        #     ActivityScreen.email=self.email
+        #     self.csm=ChildScreenManger()
+        #     self.super_box.add_widget(self.csm)
 
         print('ParentScreen2 on_enter')
         # print('parentScreen2 contents after:::', dir(ParentScreen2))
@@ -155,16 +163,25 @@ class ActivityScreen(Screen):
     def log_activity(self):
         title=self.title.text
         note=self.note.text
-        #combine date_thing adn time_thing into datetime object
         try:
             datetime_thing=datetime.datetime.strptime(self.ids.date_thing.text +" "+ self.ids.time_thing.text,'%m/%d/%Y %I:%M %p')
             add_activity_util(title, note,self.user_id_str,self.user_timezone,datetime_thing, self.email,self.password)
             self.add_widget(ConfirmBox())
-            # self.title.text=''
-            # self.note.text=''
 
         except ValueError:
             self.add_widget(FailBox())
+        print('self=Activity Screen')
+        print('self.parent.parent.children[0].children::',
+            self.parent.parent.children[0].children)
+        print('parent.screens:::',self.parent.screens)
+        print('self.parent.screens[1].children:::',
+            self.parent.screens[1].children[0].children[0].children[0].children[0].children[0].children[0])
+        self.table_data=self.parent.screens[1].children[0].children[0].children[0].children[0].children[0].children[0]
+        self.table_data.clear_widgets()
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
+        # print('whos the parent:::', self.parent.children, dir(self.parent))
 
 
 class TableScreen(Screen):
@@ -195,66 +212,134 @@ class TableScreen(Screen):
         self.add_widget(self.bigger_box)
         print('TableScreen initialized')
 
-    def on_enter(self,*args):
-        self.handle_table_data()
-        print('TableScreen on_enter')
+        self.scroll_for_table=ScrollViewForTable()
+        self.rel_layout03.add_widget(self.scroll_for_table)
+        print('this works??')
+        self.table_data=TableData()
+        print('this does not work')
+        self.scroll_for_table.add_widget(self.table_data)
 
-    def handle_table_data(self):
-        try:
-            self.rel_layout03.remove_widget(self.scroll_for_table)
-            self.scroll_for_table=ScrollViewForTable()
-            self.rel_layout03.add_widget(self.scroll_for_table)
-            print('TableData REMOVED scrollview')
+    # def on_enter(self,*args):
+    #     self.handle_table_data()
+    #     print('TableScreen on_enter')
 
-            print('TableData ABOUT to be initialized')
-
-            self.table_data=TableData(sort_direction='ascending_test')
-
-            self.scroll_for_table.add_widget(self.table_data)
-            print('TableData initialized and ADDED to scrollview')
-        except AttributeError:
-            self.scroll_for_table=ScrollViewForTable()
-            self.rel_layout03.add_widget(self.scroll_for_table)
-            print('is this the problem444????')
-            print('TableData ABOUT to be initialized')
-            print('is this the proble55555????')
-            self.table_data=TableData(sort_direction='ascending_test')
-            # print('this is ok????')
-            self.scroll_for_table.add_widget(self.table_data)
-            print('TableData initialized and ADDED to scrollview')
+    # def handle_table_data(self):
+    #     if self.scroll_for_table:
+    #         # self.rel_layout03.remove_widget(self.scroll_for_table)
+    #         # self.scroll_for_table=ScrollViewForTable()
+    #         # self.rel_layout03.add_widget(self.scroll_for_table)
+    #         # print('TableData REMOVED scrollview')
+    #
+    #         # print('TableData ABOUT to be initialized')
+    #
+    #         # self.table_data=TableData(sort_direction='ascending_test')
+    #         print('TableScreen handle_table_data self.scroll exists')
+    #         print('self.childred:::',self.children)#BiggerBox
+    #         print('self.children[0].children::')
+    #         # self.scroll_for_table.add_widget(self.table_data)
+    #         # print('TableData initialized and ADDED to scrollview')
+    #     else:
+    #         pass
+    #         # self.scroll_for_table=ScrollViewForTable()
+    #         # self.rel_layout03.add_widget(self.scroll_for_table)
+    #         # print('is this the problem444????')
+    #         # print('TableData ABOUT to be initialized')
+    #         # self.table_data=TableData(sort_direction='ascending_test')
+    #         # self.scroll_for_table.add_widget(self.table_data)
+    #
+    #
+    #         # print('TableData initialized and ADDED to scrollview')
 
 class BiggerBox(BoxLayout):...
 class RelativeLayout01(RelativeLayout):...
 class BigBox(BoxLayout):...
 class RelativeLayout02(RelativeLayout):...
 
-class HeadingBox(BoxLayout):
-    date_btn_sort=ObjectProperty(None)
+class GridDropDown(GridLayout):
     def __init__(self,**kwargs):
         super().__init__(**kwargs)
 
+    def last_20_btn(self):
+        # pass
+        print('last 20 seleted')
+        # print('some cousin:::',self.parent.parent.parent.parent.children[0])
+        # print('looking for table_data:::',
+        #     self.parent.parent.parent.parent.children[0].children[0].children[0])
+        self.table_data=self.parent.parent.parent.parent.children[0].children[0].children[0]
+        # table_data=TableData()
+        # print('looking for TableData:', self.table_data)
+        self.table_data.clear_widgets()
+        self.table_data.entry_count='20'
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
+
+    def all_entries_btn(self):
+        # pass
+        print('all')
+        self.table_data=self.parent.parent.parent.parent.children[0].children[0].children[0]
+        # print('looking for TableData:', table_data)
+        self.table_data.clear_widgets()
+        self.table_data.entry_count='all_entries'
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
+
+class HeadingBox(BoxLayout):
+    date_btn_sort=ObjectProperty(None)
+    act_btn_sort=ObjectProperty(None)
+    # table_dropdown=ObjectProperty(None)
+    # grid_drop=ObjectProperty(None)
+    btn_date_press_count:int
+    btn_act_press_count:int
+    def __init__(self,**kwargs):
+        if 'btn_date_press_count' in kwargs:
+            self.btn_date_press_count = kwargs.pop('btn_date_press_count')
+        else:
+            self.btn_date_press_count = 0
+        if 'btn_act_press_count' in kwargs:
+            self.btn_act_press_count = kwargs.pop('btn_act_press_count')
+        else:
+            self.btn_act_press_count = 0
+        super().__init__(**kwargs)
+
     def date_sort_btn(self):
-        #Process for sorting:
-        #removing data_table from scrollview has problems when re-entry, so:
-        #remedy remove scrollview from rel_layout03 then:
-        #intialize table_data_new and scrollview_for_table_new, add table_data_new to scrollview_for_table_new
-        #add scrollview_for_table_new to rel_layout03
-        self.date_btn_sort.text='sorted'
-        rel_layout03=self.parent.parent.children[0]
-        scrollview_for_table=self.parent.parent.children[0].children[0]
-        table_data=self.parent.parent.children[0].children[0].children[0]
+        self.btn_date_press_count+=1
+        self.table_data=self.parent.parent.children[0].children[0].children[0]
+        self.table_data.clear_widgets()
+        # if self.btn_date_press_count==0:
+        #     pass
+        if self.btn_date_press_count%2==1:
+            self.table_data.date_sort_direction='ascending'
+            self.date_btn_sort.text='ascending'
+            self.act_btn_sort.text='sort'
+        elif self.btn_date_press_count%2==0:
+            self.table_data.date_sort_direction='descending'
+            self.date_btn_sort.text='descending'
+            self.act_btn_sort.text='sort'
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
         # HeadingBox Lineage
         # HeadingBox>rel_layout02>big_box>rel_Layout01>bigger_box>table_screen
-        rel_layout03.remove_widget(scrollview_for_table)
-        print('scrollview REMOVED from rel_layout03 - heading_box')
-        TableData.sort_direction='ascending'
-        print('TableData ABOUT to be initialized')
-        print('is this the prboelm 333???')
-        table_data_new=TableData(sort_direction='ascending_test')
-        scrollview_for_table_new=ScrollViewForTable()
-        scrollview_for_table_new.add_widget(table_data_new)
-        rel_layout03.add_widget(scrollview_for_table_new)
-        print('TableData initialized and ADDED to scrollview')
+
+    def act_sort_btn(self):
+        self.btn_act_press_count+=1
+        self.table_data=self.parent.parent.children[0].children[0].children[0]
+        self.table_data.clear_widgets()
+        # if self.btn_act_press_count==0:
+        #     pass
+        if self.btn_act_press_count%2==1:
+            self.table_data.act_sort_direction='ascending'
+            self.act_btn_sort.text='ascending'
+            self.date_btn_sort.text='sort'
+        elif self.btn_act_press_count%2==0:
+            self.table_data.act_sort_direction='descending'
+            self.act_btn_sort.text='descending'
+            self.date_btn_sort.text='sort'
+        self.table_data.get_table_data()
+        self.table_data.add_data_to_table()
+        self.table_data.on_size()
 
 class RelativeLayout03(RelativeLayout):...
 # class ScrollViewForTable(ScrollView):...
@@ -268,8 +353,8 @@ class RelativeLayout03(RelativeLayout):...
 #     act_dict={}
 #     del_box_dict={}
 #     sort_direction:str
-#     def __init__(self,sort_direction,**kwargs):
-#         if 'sort_direction ' in kwargs:
+#     def __init__(self,**kwargs):
+#         if 'sort_direction' in kwargs:
 #             self.sort_direction = kwargs.pop('sort_direction')
 #         else:
 #             self.sort_direction = sort_direction
@@ -303,12 +388,25 @@ class RelativeLayout03(RelativeLayout):...
 #         # self.row_data_list=self.get_table_data()
 #
 #         for i in self.row_data_list[-20:]:
-#             date_time_obj=MDLabel(text=str(i[1]), size_hint=(None,None),
+#             date_time_obj=MDLabel(
+#                 text=str(i[1]),
+#                 size_hint=(None,None),
 #                 size=(self.width*(1/3),dp(50)),
-#                 font_size=10, padding=(dp(15),0))
-#             activity_obj=MDLabel(text=str(i[2]), size_hint=(None,None), size=(self.width*(1/3),dp(50)))
-#             del_box=RelativeLayout(size_hint=(None,None),size=(self.width*(1/3),dp(50)))
-#             delete_btn=Button(text=str(i[0]),font_size=2,color=(.5,.5,.5,0),
+#                 font_size=10, padding=(dp(15),0)
+#                 )
+#             activity_obj=MDLabel(
+#                 text=str(i[2]),
+#                 size_hint=(None,None),
+#                 size=(self.width*(1/3),dp(50))
+#                 )
+#             del_box=RelativeLayout(
+#                 size_hint=(None,None),
+#                 size=(self.width*(1/3),dp(50))
+#                 )
+#             delete_btn=Button(
+#                 text=str(i[0]),
+#                 font_size=2,
+#                 color=(.5,.5,.5,0),
 #                 size_hint=(.5,.5),
 #                 pos_hint={'center_x':.5,'center_y':.5}
 #                 )
@@ -358,7 +456,7 @@ class RelativeLayout03(RelativeLayout):...
 #             date_time_obj = datetime.datetime.strptime(date_time_str, '%Y-%m-%dT%H:%M:%S')
 #         # return date_time_obj.strftime("%m/%d/%Y, %H:%M:%S")
 #         return date_time_obj.strftime("%b%-d '%-y %-I:%M%p")#<------Potential hangup!***************!
-# 
+#
 # class AreYouSureBox(BoxLayout):
 #     activity_id_str=''
 #     email=''
@@ -402,6 +500,8 @@ class NavMenu(BoxLayout):
     def update_rect(self, *args):
             self.rect.pos = self.pos
             self.rect.size = self.size
+    def go_to_webiste(self):
+        webbrowser.open("https://what-sticks-health.com/")
 
 class Toolbar(MDToolbar):...
 

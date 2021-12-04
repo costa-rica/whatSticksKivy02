@@ -156,8 +156,9 @@
 
 # <BiggerBox@BoxLayout>
 <BiggerBox>
-  padding:'100dp'
-  pos_hint:{'top':.95}
+  padding:'10dp'
+  pos_hint:{'top':.90}
+  size_hint:(1,.9)
   # RelativeLayout:(RelativeLayout01:)
   #   BigBox:
 
@@ -180,23 +181,27 @@
       width:3
 
 #****Save
-# <ScrollViewForTable>
-#   canvas.before:
-#     Color:
-#       rgba: 100/255, 100/255, 100/255, 1
-#     Rectangle:
-#       size:self.size
-#
-#
-# <TableData>
-#   cols:3
-#   size_hint: 1,None
-#   height: self.minimum_height+table_bottom_buffer
+<ScrollViewForTable>
+  canvas.before:
+    Color:
+      rgba: 100/255, 100/255, 100/255, 1
+    Rectangle:
+      size:self.size
+
+
+<TableData>
+  cols:3
+  size_hint: 1,None
+  height: self.minimum_height+table_bottom_buffer
 
 #****End Save
 
 <HeadingBox>
   date_btn_sort:date_btn_sort
+  act_btn_sort:act_btn_sort
+  # __safe_id: [grid_drop.__self__]
+  # grid_drop:grid_drop
+  padding:dp(3),dp(2)
   BoxLayout:
     orientation:'vertical'
     Label:
@@ -205,15 +210,60 @@
     Button:
       id:date_btn_sort
       text:'sort'
-      size_hint:(.9,.9)
-      pos_hint:{'x':.1}
+      size_hint:(1,.9)
       on_press:root.date_sort_btn()
-  Label:
-    text:'Activity Logged'
-    color: 0,0,0,1#black
-  Label:
-    text:' '
-    color: 0,0,0,1#black
+  BoxLayout:
+    orientation:'vertical'
+    Label:
+      text:'Activity Logged'
+      color: 0,0,0,1#black
+    Button:
+      id:act_btn_sort
+      text:'sort'
+      size_hint:(1,.9)
+      on_press:root.act_sort_btn()
+  RelativeLayout:
+    size_hint_x:.7
+
+    GridDropDown
+      id: grid_drop
+      size_hint:None,None
+      size:(self.parent.width,self.parent.height)
+
+
+<GridDropDown>
+  # trick to not lost the Dropdown instance
+  # Dropdown itself is not really made to be used in kv.
+  #avoid weak reference issue
+  __safe_id: [btn1.__self__]
+  __safe_id: [btn2.__self__]
+  Button:
+    id:btn_drop
+    text:'Show Entries'
+    on_parent: drop_content.dismiss()
+    on_release: drop_content.open(self)
+    size_hint:None,None
+    size:(self.parent.width,self.parent.height)
+  DropDown:
+    id:drop_content
+    on_select: btn_drop.text = '{}'.format(args[1])
+    Button:
+      id:btn1
+      text: 'Last 20 Entries'
+      size_hint_y: None
+      height: 44
+      on_release:
+        drop_content.select(self.text)
+        root.last_20_btn()
+    Button:
+      id:btn2
+      text: 'All Entries'
+      size_hint_y: None
+      height: 44
+      on_release:
+        drop_content.select(self.text)
+        root.all_entries_btn()
+
 
 
 
@@ -230,14 +280,14 @@
 
   OneLineListItem:
     text:"About What Sticks"
-    # on_release: root.nav_to_table()
+    on_release: root.go_to_webiste()
 
   OneLineListItem:
     text:"Log Out"
     on_release:
       root.app.psm.current="ps1"
 
-# 
+#
 # <AreYouSureBox>
 #   size:(400,300)
 #   size_hint:(None, None)
