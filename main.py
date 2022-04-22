@@ -31,6 +31,9 @@ from scroll_table_data import ScrollViewForTable, TableData
 
 import webbrowser
 from kivy.uix.dropdown import DropDown
+# from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
+# from itsdangerous import Serializer
+# from config import Config
 
 if platform in ['ios','android']:
     print('kivy.utils.platform:::', platform)
@@ -50,37 +53,59 @@ class ParentScreen1(Screen):
         print('ParentScreen2 on_enter')
 
     def login_button(self):
-
-        response = requests.request('GET','http://api.what-sticks-health.com/get_users',
+        # base_url= 'http://localhost:8000'
+        base_url = 'https://api.what-sticks-health.com'
+        response_login = requests.request('GET',base_url + '/login',
             auth=(self.email.text,self.password.text))
-        # print('email/password::', self.email.text, self.password.text)
-        # print("response:::",response.status_code)
+        # response = requests.request('GET','https://api.what-sticks-health.com/login',
+        #     auth=(self.email.text,self.password.text))
+        print('email/password::', self.email.text, self.password.text)
+        print("response:::",response_login.status_code)
 
-        if response.status_code ==200:
+        if response_login.status_code ==200:
             # TableScreen.stuff=json.loads(response.content.decode('utf-8'))
-            # print(json.loads(response.content.decode('utf-8')))
-            for i in json.loads(response.content.decode('utf-8')):
-                if i['email']==self.email.text:
+            print(json.loads(response_login.content.decode('utf-8')))
+            print(type(json.loads(response_login.content.decode('utf-8'))))
+            # login_token = json.loads(response.text)['token']
+            login_token = json.loads(response_login.content.decode('utf-8'))['token']
+            print('login_token accepted!')
 
-                    # ActivityScreen.user_name_str=i['username']
-                    ParentScreen2.user_timezone=i['user_timezone']
-                    # print('i[user_timezone;;;;',i['user_timezone'])
-                    # ActivityScreen.user_id_str=i['id']
-                    ParentScreen2.email=self.email.text
-                    ActivityScreen.email=self.email.text
-                    ActivityScreen.password=self.password.text
-                    ActivityScreen.user_id_str=i['id']
-                    TableScreen.email=self.email.text
-                    TableScreen.password=self.password.text
-                    TableScreen.user_id_str=i['id']
-                    TableData.email=self.email.text
-                    TableData.password=self.password.text
-                    TableData.user_id_str=i['id']
-                    # print('ParentScreen1 login_button email:::',self.email.text)
+            url_user_data = base_url + "/user_account_data"
+            headers = {'x-access-token': login_token,'Content-Type': 'application/json'}
+            response_user_data = requests.request("GET", url_user_data, headers=headers)
+            user_data_dict = json.loads(response_user_data.text)
+            print(json.loads(response_user_data.text))
+            print(type(json.loads(response_user_data.text)))
 
-                    self.app.psm.current="ps2"
-        else:
-            invalidLogin()
+            # print('decrypted_token_dict:::', decrypted_token_dict)
+            # print(dir(itsdangerous))
+
+            # for i in user_data_dict:
+            if user_data_dict['email']==self.email.text:
+
+                # ActivityScreen.user_name_str=i['username']
+                ParentScreen2.user_timezone=user_data_dict['user_timezone']
+                # print('i[user_timezone;;;;',i['user_timezone'])
+                # ActivityScreen.user_id_str=i['id']
+                ParentScreen2.email=self.email.text
+                ActivityScreen.email=self.email.text
+                # ActivityScreen.password=self.password.text
+                ActivityScreen.login_token=login_token
+                ActivityScreen.user_id_str=user_data_dict['id']
+                TableScreen.email=self.email.text
+                # TableScreen.password=self.password.text
+                TableScreen.login_token=login_token
+                TableScreen.user_id_str=user_data_dict['id']
+                TableData.email=self.email.text
+                # TableData.password=self.password.text
+                TableData.login_token=login_token
+                TableData.user_id_str=user_data_dict['id']
+                # print('ParentScreen1 login_button email:::',self.email.text)
+
+                self.app.psm.current="ps2"
+                print('BOTH Tokens Accepted! :::', login_token)
+            else:
+                invalidLogin()
 
 class ParentScreen2(Screen):
     # user_timezone=''
@@ -551,7 +576,7 @@ class MainApp(MDApp):
         psm.add_widget(self.ps1)
         psm.add_widget(self.ps2)
         self.icon = "icon.png"
-
+        # self.config_custom = Config()
         return psm
 
 if __name__ == "__main__":

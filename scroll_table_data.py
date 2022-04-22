@@ -19,8 +19,8 @@ class ScrollViewForTable(ScrollView):...
 class TableData(GridLayout):
     user_id_str: str
     email: str
-    password: str
-    url_get_activities='https://api.what-sticks-health.com/get_user_health_descriptions/'
+    login_token: str
+    url_get_activities='https://api.what-sticks-health.com/user_health_descriptions'
     date_dict={}
     act_dict={}
     del_box_dict={}
@@ -48,13 +48,15 @@ class TableData(GridLayout):
         print('TableData initialized')
 
     def get_table_data(self):
-        response = requests.request('GET',
-            self.url_get_activities+str(self.user_id_str),
-            auth=(self.email,self.password))
-        response_decoded=response.content.decode('utf-8')
-        response_data=json.loads(response.content.decode('utf-8'))
+        headers = {'x-access-token':self.login_token, 'Content-Type': 'application/json'}
+        response = requests.request('GET',self.url_get_activities, headers=headers)
+
+        user_data_dict = json.loads(response.text)
+        print('user_data_dict::', type(user_data_dict[0]), user_data_dict[0])
+        # print(user_data_dict[user_data_dict.keys()[0]])
+        # response_data=json.loads(response.content.decode('utf-8'))
         self.row_data_list=[(i['id'],self.convert_datetime(
-            i['datetime_of_activity']),i['var_activity']) for i in response_data]
+            i['datetime_of_activity']),i['var_activity']) for i in user_data_dict]
 
         if self.entry_count!='all_entries':
             self.row_data_list=self.row_data_list[-20:]

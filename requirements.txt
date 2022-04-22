@@ -1,3 +1,5 @@
+#python==3.9.2 --i think?
+#pip==20.2.3 --I think?
 arrow==1.2.1
 binaryornot==0.4.4
 certifi==2021.10.8
